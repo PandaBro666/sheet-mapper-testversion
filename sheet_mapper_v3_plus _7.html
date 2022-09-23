@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title></title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://npmcdn.com/csv2geojson@latest/csv2geojson.js'></script>
+    <script src='./require.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/json2csv"></script>
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Popup styling */
+        .mapboxgl-popup {
+            padding-bottom: 5px;
+            overflow: hide;
+            overflow-wrap: normal;
+            resize: both;
+            will-change: transform;
+            max-width: 600px !important;
+            max-height: 100%;
+        }
+
+        .mapboxgl-popup-close-button {
+            font-size: 30px;
+            padding-top: 2px;
+            padding-right: 4px;
+            color: white;
+        }
+
+        .mapboxgl-popup-content {
+            font: 400 15px/22px 'Source Sans Pro', 'Helvetica Neue', Sans-serif;
+            padding: 0;
+            width: 585px;
+        }
+
+        .mapboxgl-popup-content-wrapper {
+            padding: 1%;
+        }
+
+        .mapboxgl-popup-content h2 {
+            background: rgb(61, 59, 59);
+            text-align: center;
+            color: #fff;
+            margin: 0;
+            display: block;
+            padding: 15px;
+            font-weight: 700;
+            margin-top: -5px;
+        }
+
+        .mapboxgl-popup-content h3 {
+            margin: 0;
+            display: block;
+            padding: 10px 3px 10px 10px;
+            font-weight: 500;
+        }
+
+        .mapboxgl-popup-content h4 {
+            margin: 0;
+            display: block;
+            padding: 10px 3px 10px 10px;
+            font-weight: 400;
+        }
+
+        .mapboxgl-container {
+            cursor: pointer;
+        }
+
+        .mapboxgl-popup-anchor-top > .mapboxgl-popup-content {
+            margin-top: 3px;
+        }
+
+        .mapboxgl-popup-anchor-top > .mapboxgl-popup-tip {
+            border-bottom-color: rgb(61, 59, 59);
+        }
+
+
+
+
+        .map-overlay {
+            position: absolute;
+            width: 25%;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            font: 16px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            background-color: transparent;
+            height: 50%;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+            .map-overlay h1 {
+                font-family: Calibri;
+                font-size: 30px;
+                margin: 0 0 4px;
+                padding: 0;
+                font-weight: 600;
+                background-color: transparent;
+            }
+
+            .map-overlay fieldset {
+                display: none;
+                background: transparent;
+                border: none;
+                padding: 0px;
+                margin: 0;
+                position: relative;
+            }
+
+            .map-overlay input {
+                display: block;
+                border: lightgray;
+                width: 100%;
+                max-height: 100%;
+                border-radius: 3px;
+                padding: 10px 27px;
+                margin: 0;
+                box-sizing: border-box;
+                font-size: 16px;
+            }
+
+            .map-overlay .listing {
+                height: 0px;
+                overflow: scroll;
+                /* border: 1px solid #666; */
+                border-top: none;
+                padding: 0;
+                margin: 0 0 20px;
+                background-color: white;
+            }
+
+                .map-overlay .listing.expand {
+                    height: 400px;
+                }
+
+                .map-overlay .listing > * {
+                    display: block;
+                    padding: 5px 10px;
+                    margin: 0;
+                }
+
+                .map-overlay .listing a {
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                    color: #404;
+                    text-decoration: none;
+                }
+
+                    .map-overlay .listing a:last-child {
+                        border: none;
+                    }
+
+                    .map-overlay .listing a:hover {
+                        background: #f0f0f0;
+                    }
+
+        .fa-search {
+            position: absolute;
+            left: 2%;
+            top: 25%;
+            font-size: 16px;
+            color: #848484;
+        }
+
+        button.input-clear {
+            position: absolute;
+            top: 25%;
+            right: 2%;
+            border: black;
+            font-size: 16px;
+            background-color: lightgray;
+        }
+
+        .title-container {
+            border-bottom: 1px solid #aaa;
+            padding-top: 3px;
+            padding-bottom: 2px;
+            border: none;
+        }
+
+        .info-container {
+            padding: 5px;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            background-color: white;
+        }
+
+            .info-container p {
+                margin: 0;
+                padding: 1px;
+            }
+
+        .byline {
+            font-weight: 600;
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="map-overlay">
+        <div class="title-container">
+            <h1>Global research heat</h1>
+            <div class="byline">by <a href="https://www.researchgate.net/profile/Zhelun-Sun" target="_blank"> Zhelun Sun</a></div>
+        </div>
+
+        <div class="info-container">
+            <p style="font-size: 16px; font-family: Calibri; margin-bottom: 5px; margin-top: 3px; "> <b>Data Discription</b> </p>
+            <p style="font-size: 14px; font-family: Calibri;">This map contains data collected from</p>
+        </div>
+
+        <fieldset>
+            <input id="feature-filter" type="text" placeholder="Search by location or disease"><i class="fa fa-search"></i>
+            <button class="input-clear" onclick="document.getElementById('feature-filter').value = ''">x</button>
+        </fieldset>
+        <div id="feature-listing" class="listing"></div>
+    </div>
+
+    <script>
+        $("#feature-filter").focus(function () {
+            $('.map-overlay .listing').addClass('expand');
+            //$('.map-overlay').addClass('expand')
+        });
+
+        $('.input-clear').click(function () {
+            $('.map-overlay .listing').removeClass('expand');
+            //$('.map-overlay ').addClass('expand')
+            //$(".constituencies li").fadeIn(0);
+        });
+
+
+        var transformRequest = (url, resourceType) => {
+            var isMapboxRequest =
+                url.slice(8, 22) === "api.mapbox.com" ||
+                url.slice(10, 26) === "tiles.mapbox.com";
+            return {
+                url: isMapboxRequest
+                    ? url.replace("?", "?pluginName=sheetMapper&")
+                    : url
+            };
+        };
+        //YOUR TURN: add your Mapbox token
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic3VuemhlbHVuIiwiYSI6ImNsNW55Nzl2czE4ZjAzam5tOHUxZzExMGkifQ.JAETM7ZJOSX5YdRJentP4w'; //Mapbox token
+        var map = new mapboxgl.Map({
+            container: 'map', // container id
+            style: 'mapbox://styles/mapbox/streets-v11', // YOUR TURN: choose a style: https://docs.mapbox.com/api/maps/#styles
+            center: [116.5, 40.2], // starting position [lng, lat]
+            zoom: 2,// starting zoom
+            transformRequest: transformRequest
+        });
+
+        $(document).ready(function () {
+            $.ajax({
+                type: "GET",
+                //YOUR TURN: Replace with csv export link
+                url: 'https://docs.google.com/spreadsheets/d/1FcU2NkM7IAY0y_bglwDNOf86T0RFUZJDWrD0aK8YB18/gviz/tq?tqx=out:csv&sheet=Sheet1',
+                dataType: "text",
+                success: function (csvData) { makeGeoJSON(csvData); }
+            });
+
+
+
+            function makeGeoJSON(csvData) {
+                csv2geojson.csv2geojson(csvData, {
+                    latfield: 'LAT',
+                    lonfield: 'LON',
+                    delimiter: ','
+                }, function (err, data) {
+                    map.on('load', function () {
+
+                        //Add the the layer to the map
+                        map.addLayer({
+                            'id': 'csvData',
+                            'type': 'circle',
+                            'source': {
+                                'type': 'geojson',
+                                'data': data
+                            },
+                            'paint': {
+                                'circle-radius': 7,
+                                'circle-color': "purple"
+                            }
+                          
+                        });
+
+
+                        // When a click event occurs on a feature in the csvData layer, open a popup at the
+                        // location of the feature, with description HTML from its properties.
+                        map.on('click', 'csvData', function (e) {
+                            var coordinates = e.features[0].geometry.coordinates.slice();
+
+                            //set popup text
+                            //You can adjust the values of the popup to match the headers of your CSV.
+                            // For example: e.features[0].properties.Name is retrieving information from the field Name in the original CSV.
+                            var description = `<h2>` + e.features[0].properties.City + ', ' + e.features[0].properties.Country + `</h2>` +
+                                `<h4>` + `<b>` + `Disease: ` + `</b>` + e.features[0].properties.Disease + `</h4>` +
+
+                                `<h3>` + `<b>` + `Time: ` + `</b>` + `</h3>` +
+                                `<h4>` + `<b>` + `Year: ` + `</b>` + e.features[0].properties.Year + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Month: ` + `</b>` + e.features[0].properties.Months + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Days: ` + `</b>` + e.features[0].properties.Days + `</h4>` +
+
+                                `<h3>` + `<b>` + `Temperature: ` + `</b>` + `</h3>` +
+                                `<h4>` + `<b>` + `Daily mean temperature: ` + `</b>` + e.features[0].properties.DailyAvgTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + '<br>'+ `<b>` + `Daily minimum temperature: ` + `</b>` + e.features[0].properties.DailyMinTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily maximum temperature: ` + `</b>` + e.features[0].properties.DailyMaxTemp + `</h4>` +
+
+                                `<h3>` + `<b>` + `Patient: ` + `</b>` + `</h3>` +
+                                `<h4>` + `<b>` + `Number of observed people: ` + `</b>` + e.features[0].properties.TotalOberservation + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Total number of patients: ` + `</b>` + e.features[0].properties.PatinentsNumber + '<br>' +
+                                  `<b>` + `Number of patients: ` + `</b>` + e.features[0].properties.TotalPatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily mean number of patients: ` + `</b>` + e.features[0].properties.AvgDailyPatients + '<br>'+
+                                  `<b>` + `Mortality: ` + `</b>` + e.features[0].properties.DeathToll + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily average death: ` + `</b>` + e.features[0].properties.AvgDailyDeath + '<br>' +
+                                  `<b>` + `Patients older than 60: ` + `</b>` + e.features[0].properties.PatientsAboveSixty + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Patients younger than 60: ` + `</b>` + e.features[0].properties.PatientsUnderSixty + '<br>' +
+                                  `<b>` + `Number of male patients: ` + `</b>` + e.features[0].properties.MalePatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Number of female patients: ` + `</b>` + e.features[0].properties.FemalePatients + `</h4>` +
+
+                                `<h4>` + `<b>` + `Literature: ` + `</b>` + e.features[0].properties.Literature + '.' + e.features[0].properties.Journal + '&nbsp;&nbsp;' + e.features[0].properties.Page + `</h4>`
+                                + downloadLink(e);
+
+                            // Ensure that if the map is zoomed out such that multiple
+                            // copies of the feature are visible, the popup appears
+                            // over the copy being pointed to.
+                            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                            }
+
+                            //add Popup to map
+
+                            new mapboxgl.Popup()
+                                .setLngLat(coordinates)
+                                .setHTML(description)
+                                .addTo(map);
+                        });
+
+                        
+                        // move end
+                        map.on('moveend', () => {
+                            //const features = map.queryRenderedFeatures({ layers: ['csvData'] });
+                            const features = data.features;
+
+                            if (features) {
+                                //const uniqueFeatures = getUniqueFeatures(features, 'Num');
+
+                                // Populate features for the listing overlay.
+                                renderListings(features);
+
+                                // Clear the input container
+                                //filterEl.value = '';
+
+                                // Store the current features in sn `airports` variable to
+                                // later use for filtering on `keyup`.
+                                spots = features;
+                            }
+                        });
+                                           
+                        // Change the cursor to a pointer when the mouse is over the places layer.
+
+                        map.on('mouseenter', 'csvData', function () {
+                            map.getCanvas().style.cursor = 'pointer';
+                        });
+
+
+
+                        // Change it back to a pointer when it leaves.
+                        map.on('mouseleave', 'csvData', function () {
+                            map.getCanvas().style.cursor = '';
+                        });
+
+                        var bbox = turf.bbox(data);
+                        map.fitBounds(bbox, { padding: 50 });
+
+                        filterEl.addEventListener('keyup', (e) => {
+                            const value = normalize(e.target.value);
+
+                            // Filter visible features that match the input value.
+                            const filtered = [];
+                            for (const feature of spots) {
+                                const city = normalize(feature.properties.City);
+                                const country = normalize(feature.properties.Country);
+                                const disease = normalize(feature.properties.Disease);
+                                if (city.includes(value) || country.includes(value) || disease.includes(value))
+                                {
+                                    filtered.push(feature);
+                                }
+                            }
+
+                            // Populate the sidebar with filtered results
+                            renderListings(filtered);
+
+                            // Set the filter to populate features into the layer.
+                            if (filtered.length) {
+                                map.setFilter('csvFile', [
+                                    'match',
+                                    ['get', 'Num'],
+                                    filtered.map((feature) => {
+                                        return feature.properties.City;
+                                    }),
+                                    true,
+                                    false
+                                ]);
+                            }
+                        });
+
+                        // Call this function on initialization
+                        // passing an empty array to render an empty state
+                        renderListings([]);
+
+                    });
+
+                });
+            };
+
+            // download
+            function downloadLink(e) {
+                    
+                // parse JSON
+                const { Parser } = require([json2csv']);
+
+                const json2csvParser = new Parser();
+                const csv = json2csvParser.parse(e.features[0].properties);
+
+                // create download link
+                filename = e.features[0].properties.City + '_' + e.features[0].properties.Country + '.csv'
+                var blob = new Blob([csv]);
+
+                var href = URL.createObjectURL(blob);
+
+                var dlLilnk = "<a href=" + href + "download=" + filename + ">Download</a>";
+                return dlLilnk;
+               
+            }
+
+            // Filter Features and show them on a list
+            const filterEl = document.getElementById('feature-filter');
+            const listingEl = document.getElementById('feature-listing');
+
+            function renderListings(features) {
+                const empty = document.createElement('p');
+                // Clear any existing listings
+                listingEl.innerHTML = '';
+                if (features.length) {
+                    for (const feature of features) {
+                        const itemLink = document.createElement('a');
+                        const label = `${feature.properties.City}, ${feature.properties.Country}   （${feature.properties.Disease}）`;
+
+                        itemLink.href = '#!';
+                        itemLink.className = 'title';
+                        itemLink.id = `itemLink-${feature.properties.Num}`;
+                        itemLink.innerHTML = `${feature.properties.City}`;
+                        //itemLink.target = '_blank';
+                        itemLink.textContent = label;
+
+                        itemLink.addEventListener('click', () => {
+                            // Highlight corresponding feature on the map
+                            flyToStore(feature);
+                            createPopUp(feature);
+                        });
+                        listingEl.appendChild(itemLink);
+                    }
+
+                    // Show the filter input
+                    filterEl.parentNode.style.display = 'block';
+                }
+
+                else if (features.length === 0 && filterEl.value !== '') {
+                    empty.textContent = 'No results found';
+                    listingEl.appendChild(empty);
+                }
+                else {
+                    empty.textContent = 'Drag the map to populate results';
+                    listingEl.appendChild(empty);
+
+                    // Hide the filter input
+                    filterEl.parentNode.style.display = 'none';
+
+                    // remove features filter
+                    map.setFilter('csvData', ['has', 'Num']);
+                }
+            }
+
+            function normalize(string) {
+                return string.trim().toLowerCase();
+            }
+
+            // Because features come from tiled vector data,
+            // feature geometries may be split
+            // or duplicated across tile boundaries.
+            // As a result, features may appear
+            // multiple times in query results.
+            function getUniqueFeatures(features, comparatorProperty) {
+                const uniqueIds = new Set();
+                const uniqueFeatures = [];
+                for (const feature of features) {
+                    const id = feature.properties[comparatorProperty];
+                    if (!uniqueIds.has(id)) {
+                        uniqueIds.add(id);
+                        uniqueFeatures.push(feature);
+                    }
+                }
+                return uniqueFeatures;
+            }
+        });
+
+        function flyToStore(currentFeature) {
+                cor = currentFeature.geometry.coordinates
+                lon = cor[0]
+                lat = cor[1] - 0.6
+            map.flyTo({
+                center: [lon, lat],
+                zoom: 8,
+                speed: 1.3
+            });
+        }
+
+        function createPopUp(feature) {
+            const popUps = document.getElementsByClassName('mapboxgl-popup');
+            /** Check if there is already a popup on the map and if so, remove it */
+            if (popUps[0]) popUps[0].remove();
+            true
+            new mapboxgl.Popup({ closeOnClick: true })
+                .setLngLat(feature.geometry.coordinates)
+                .setHTML(`<h2>` + feature.properties.City + ', ' + feature.properties.Country + `</h2>` +
+                    `<h4>` + `<b>` + `Disease: ` + `</b>` + feature.properties.Disease + `</h4>` +
+
+                    `<h3>` + `<b>` + `Time: ` + `</b>` + `</h3>` +
+                    `<h4>` + `<b>` + `Year: ` + `</b>` + feature.properties.Year + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Month: ` + `</b>` + feature.properties.Months + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Days: ` + `</b>` + feature.properties.Days + `</h4>` +
+
+                    `<h3>` + `<b>` + `Temperature: ` + `</b>` + `</h3>` +
+                `<h4>` + `<b>` + `Daily mean temperature: ` + `</b>` + feature.properties.DailyAvgTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + '<br>'+ `<b>` + `Daily minimum temperature: ` + `</b>` + feature.properties.DailyMinTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily maximum temperature: ` + `</b>` + feature.properties.DailyMaxTemp + `</h4>` +
+
+                    `<h3>` + `<b>` + `Patient: ` + `</b>` + `</h3>` +
+                    `<h4>` + `<b>` + `Number of observed people: ` + `</b>` + feature.properties.TotalOberservation + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Total number of patients: ` + `</b>` + feature.properties.PatinentsNumber + `</h4>` +
+                    `<h4>` + `<b>` + `Number of patients: ` + `</b>` + feature.properties.TotalPatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily mean number of patients: ` + `</b>` + feature.properties.AvgDailyPatients + `</h4>` +
+                    `<h4>` + `<b>` + `Mortality: ` + `</b>` + feature.properties.DeathToll + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily average death: ` + `</b>` + feature.properties.AvgDailyDeath + `</h4>` +
+                    `<h4>` + `<b>` + `Patients older than 60: ` + `</b>` + feature.properties.PatientsAboveSixty + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Patients younger than 60: ` + `</b>` + feature.properties.PatientsUnderSixty + `</h4>` +
+                    `<h4>` + `<b>` + `Number of male patients: ` + `</b>` + feature.properties.MalePatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Number of female patients: ` + `</b>` + feature.properties.FemalePatients + `</h4>` +
+
+                `<h4>` + `<b>` + `Literature: ` + `</b>` + feature.properties.Literature + '.' + feature.properties.Journal + '&nbsp;&nbsp;' + feature.properties.Page + `</h4>` + downloadLink(e))
+                .addTo(map);
+
+
+        }
+
+
+    </script>
+</body>
+
+</html>
