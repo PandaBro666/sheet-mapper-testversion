@@ -9,11 +9,11 @@
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.css' rel='stylesheet' />
     <script src='https://npmcdn.com/csv2geojson@latest/csv2geojson.js'></script>
-    <script src='./require.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/json2csv"></script>
+    <script src="./json2csv.js" type="text/javascript" charset="utf-8"></script>
     <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
     <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
     <style>
+
 
         body {
             margin: 0;
@@ -103,7 +103,7 @@
             left: 0;
             font: 16px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
             background-color: transparent;
-            height: 50%;
+            height: 85%;
             overflow: hidden;
             padding: 10px;
         }
@@ -219,13 +219,19 @@
     <div id="map"></div>
     <div class="map-overlay">
         <div class="title-container">
-            <h1>Global research heat</h1>
+            <h1>Global heat and health researches</h1>
             <div class="byline">by <a href="https://www.researchgate.net/profile/Zhelun-Sun" target="_blank"> Zhelun Sun</a></div>
         </div>
 
         <div class="info-container">
-            <p style="font-size: 16px; font-family: Calibri; margin-bottom: 5px; margin-top: 3px; "> <b>Data Discription</b> </p>
-            <p style="font-size: 14px; font-family: Calibri;">This map contains data collected from</p>
+            <p style="font-size: 16px; font-family: Calibri; margin-bottom: 5px; margin-top: 3px; "> <b>Discription</b> </p>
+            <p style="font-size: 16px; font-family: Calibri;">
+              Extreme heat events caused by climate change can pose a risk to the health of individuals.
+              This map shows researches on heat and health in different parts of the world. 
+              Each point represents a single research. When clicking one point, a popup which contains detailed information of this reasrach appears. You can downlaod the data in the popup by clicking the link in it (in csv format).
+              You can also query a point by location or disease in the search bar. 
+          </p>
+          <p style="font-size: 14px; font-family: Calibri;"> <em>Tip: </em> Drag the map down a little if you cannot see the whole popup.</p>
         </div>
 
         <fieldset>
@@ -234,8 +240,13 @@
         </fieldset>
         <div id="feature-listing" class="listing"></div>
     </div>
-
+    <iframe id="iframe1" style="display:none;" src="./require.js"></iframe>
     <script>
+        var require = document.getElementById('iframe1').contentWindow.require;
+        //var json2csv = require('json2csv');
+        //var require = window.top.require;
+
+
         $("#feature-filter").focus(function () {
             $('.map-overlay .listing').addClass('expand');
             //$('.map-overlay').addClass('expand')
@@ -263,17 +274,18 @@
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VuemhlbHVuIiwiYSI6ImNsNW55Nzl2czE4ZjAzam5tOHUxZzExMGkifQ.JAETM7ZJOSX5YdRJentP4w'; //Mapbox token
         var map = new mapboxgl.Map({
             container: 'map', // container id
-            style: 'mapbox://styles/mapbox/streets-v11', // YOUR TURN: choose a style: https://docs.mapbox.com/api/maps/#styles
+            style: 'mapbox://styles/mapbox/light-v10', // YOUR TURN: choose a style: https://docs.mapbox.com/api/maps/#styles
             center: [116.5, 40.2], // starting position [lng, lat]
-            zoom: 2,// starting zoom
+            zoom: 1.7,// starting zoom
             transformRequest: transformRequest
         });
+
 
         $(document).ready(function () {
             $.ajax({
                 type: "GET",
                 //YOUR TURN: Replace with csv export link
-                url: 'https://docs.google.com/spreadsheets/d/1FcU2NkM7IAY0y_bglwDNOf86T0RFUZJDWrD0aK8YB18/gviz/tq?tqx=out:csv&sheet=Sheet1',
+                url: 'https://cdn.glitch.global/4b0add3d-9212-4228-af18-e993e490eee6/data_Eng.csv?v=1663937415517',
                 dataType: "text",
                 success: function (csvData) { makeGeoJSON(csvData); }
             });
@@ -298,9 +310,9 @@
                             },
                             'paint': {
                                 'circle-radius': 7,
-                                'circle-color': "purple"
+                                'circle-color': "#C21010"
                             }
-                          
+
                         });
 
 
@@ -319,17 +331,17 @@
                                 `<h4>` + `<b>` + `Year: ` + `</b>` + e.features[0].properties.Year + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Month: ` + `</b>` + e.features[0].properties.Months + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Days: ` + `</b>` + e.features[0].properties.Days + `</h4>` +
 
                                 `<h3>` + `<b>` + `Temperature: ` + `</b>` + `</h3>` +
-                                `<h4>` + `<b>` + `Daily mean temperature: ` + `</b>` + e.features[0].properties.DailyAvgTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + '<br>'+ `<b>` + `Daily minimum temperature: ` + `</b>` + e.features[0].properties.DailyMinTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily maximum temperature: ` + `</b>` + e.features[0].properties.DailyMaxTemp + `</h4>` +
+                                `<h4>` + `<b>` + `Daily mean temperature: ` + `</b>` + e.features[0].properties.DailyAvgTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + '<br>' + `<b>` + `Daily minimum temperature: ` + `</b>` + e.features[0].properties.DailyMinTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily maximum temperature: ` + `</b>` + e.features[0].properties.DailyMaxTemp + `</h4>` +
 
                                 `<h3>` + `<b>` + `Patient: ` + `</b>` + `</h3>` +
                                 `<h4>` + `<b>` + `Number of observed people: ` + `</b>` + e.features[0].properties.TotalOberservation + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Total number of patients: ` + `</b>` + e.features[0].properties.PatinentsNumber + '<br>' +
-                                  `<b>` + `Number of patients: ` + `</b>` + e.features[0].properties.TotalPatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily mean number of patients: ` + `</b>` + e.features[0].properties.AvgDailyPatients + '<br>'+
-                                  `<b>` + `Mortality: ` + `</b>` + e.features[0].properties.DeathToll + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily average death: ` + `</b>` + e.features[0].properties.AvgDailyDeath + '<br>' +
-                                  `<b>` + `Patients older than 60: ` + `</b>` + e.features[0].properties.PatientsAboveSixty + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Patients younger than 60: ` + `</b>` + e.features[0].properties.PatientsUnderSixty + '<br>' +
-                                  `<b>` + `Number of male patients: ` + `</b>` + e.features[0].properties.MalePatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Number of female patients: ` + `</b>` + e.features[0].properties.FemalePatients + `</h4>` +
+                                `<b>` + `Number of patients: ` + `</b>` + e.features[0].properties.TotalPatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily mean number of patients: ` + `</b>` + e.features[0].properties.AvgDailyPatients + '<br>' +
+                                `<b>` + `Mortality: ` + `</b>` + e.features[0].properties.DeathToll + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily average death: ` + `</b>` + e.features[0].properties.AvgDailyDeath + '<br>' +
+                                `<b>` + `Patients older than 60: ` + `</b>` + e.features[0].properties.PatientsAboveSixty + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Patients younger than 60: ` + `</b>` + e.features[0].properties.PatientsUnderSixty + '<br>' +
+                                `<b>` + `Number of male patients: ` + `</b>` + e.features[0].properties.MalePatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Number of female patients: ` + `</b>` + e.features[0].properties.FemalePatients + `</h4>` +
 
                                 `<h4>` + `<b>` + `Literature: ` + `</b>` + e.features[0].properties.Literature + '.' + e.features[0].properties.Journal + '&nbsp;&nbsp;' + e.features[0].properties.Page + `</h4>`
-                                + downloadLink(e);
+                                + '&nbsp;&nbsp;' + `<b>` + downloadLink(transform(e.features[0].properties), namecsv(e.features[0].properties)) + `</b>`;
 
                             // Ensure that if the map is zoomed out such that multiple
                             // copies of the feature are visible, the popup appears
@@ -344,9 +356,24 @@
                                 .setLngLat(coordinates)
                                 .setHTML(description)
                                 .addTo(map);
+                          
+                          //zoom in
+                          
+                          zoom = map.getZoom()
+                          if(zoom <= 3.2){
+                            var lon =   e.lngLat.lng;
+                            var lat = e.lngLat.lat - 14;
+                            map.flyTo({
+                                center: [lon, lat],
+                                zoom: 3.2,
+                                speed: 1
+                                    });
+                            
+                          }
+                          
                         });
 
-                        
+
                         // move end
                         map.on('moveend', () => {
                             //const features = map.queryRenderedFeatures({ layers: ['csvData'] });
@@ -366,7 +393,7 @@
                                 spots = features;
                             }
                         });
-                                           
+
                         // Change the cursor to a pointer when the mouse is over the places layer.
 
                         map.on('mouseenter', 'csvData', function () {
@@ -392,8 +419,7 @@
                                 const city = normalize(feature.properties.City);
                                 const country = normalize(feature.properties.Country);
                                 const disease = normalize(feature.properties.Disease);
-                                if (city.includes(value) || country.includes(value) || disease.includes(value))
-                                {
+                                if (city.includes(value) || country.includes(value) || disease.includes(value)) {
                                     filtered.push(feature);
                                 }
                             }
@@ -424,25 +450,7 @@
                 });
             };
 
-            // download
-            function downloadLink(e) {
-                    
-                // parse JSON
-                const { Parser } = require([json2csv']);
 
-                const json2csvParser = new Parser();
-                const csv = json2csvParser.parse(e.features[0].properties);
-
-                // create download link
-                filename = e.features[0].properties.City + '_' + e.features[0].properties.Country + '.csv'
-                var blob = new Blob([csv]);
-
-                var href = URL.createObjectURL(blob);
-
-                var dlLilnk = "<a href=" + href + "download=" + filename + ">Download</a>";
-                return dlLilnk;
-               
-            }
 
             // Filter Features and show them on a list
             const filterEl = document.getElementById('feature-filter');
@@ -466,7 +474,7 @@
 
                         itemLink.addEventListener('click', () => {
                             // Highlight corresponding feature on the map
-                            flyToStore(feature);
+                            flyTo(feature);
                             createPopUp(feature);
                         });
                         listingEl.appendChild(itemLink);
@@ -496,29 +504,13 @@
                 return string.trim().toLowerCase();
             }
 
-            // Because features come from tiled vector data,
-            // feature geometries may be split
-            // or duplicated across tile boundaries.
-            // As a result, features may appear
-            // multiple times in query results.
-            function getUniqueFeatures(features, comparatorProperty) {
-                const uniqueIds = new Set();
-                const uniqueFeatures = [];
-                for (const feature of features) {
-                    const id = feature.properties[comparatorProperty];
-                    if (!uniqueIds.has(id)) {
-                        uniqueIds.add(id);
-                        uniqueFeatures.push(feature);
-                    }
-                }
-                return uniqueFeatures;
-            }
+            
         });
 
-        function flyToStore(currentFeature) {
-                cor = currentFeature.geometry.coordinates
-                lon = cor[0]
-                lat = cor[1] - 0.6
+        function flyTo(currentFeature) {
+            cor = currentFeature.geometry.coordinates
+            lon = cor[0]
+            lat = cor[1] - 0.6
             map.flyTo({
                 center: [lon, lat],
                 zoom: 8,
@@ -540,7 +532,7 @@
                     `<h4>` + `<b>` + `Year: ` + `</b>` + feature.properties.Year + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Month: ` + `</b>` + feature.properties.Months + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Days: ` + `</b>` + feature.properties.Days + `</h4>` +
 
                     `<h3>` + `<b>` + `Temperature: ` + `</b>` + `</h3>` +
-                `<h4>` + `<b>` + `Daily mean temperature: ` + `</b>` + feature.properties.DailyAvgTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + '<br>'+ `<b>` + `Daily minimum temperature: ` + `</b>` + feature.properties.DailyMinTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily maximum temperature: ` + `</b>` + feature.properties.DailyMaxTemp + `</h4>` +
+                    `<h4>` + `<b>` + `Daily mean temperature: ` + `</b>` + feature.properties.DailyAvgTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + '<br>' + `<b>` + `Daily minimum temperature: ` + `</b>` + feature.properties.DailyMinTemp + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Daily maximum temperature: ` + `</b>` + feature.properties.DailyMaxTemp + `</h4>` +
 
                     `<h3>` + `<b>` + `Patient: ` + `</b>` + `</h3>` +
                     `<h4>` + `<b>` + `Number of observed people: ` + `</b>` + feature.properties.TotalOberservation + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Total number of patients: ` + `</b>` + feature.properties.PatinentsNumber + `</h4>` +
@@ -549,12 +541,45 @@
                     `<h4>` + `<b>` + `Patients older than 60: ` + `</b>` + feature.properties.PatientsAboveSixty + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Patients younger than 60: ` + `</b>` + feature.properties.PatientsUnderSixty + `</h4>` +
                     `<h4>` + `<b>` + `Number of male patients: ` + `</b>` + feature.properties.MalePatients + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + `<b>` + `Number of female patients: ` + `</b>` + feature.properties.FemalePatients + `</h4>` +
 
-                `<h4>` + `<b>` + `Literature: ` + `</b>` + feature.properties.Literature + '.' + feature.properties.Journal + '&nbsp;&nbsp;' + feature.properties.Page + `</h4>` + downloadLink(e))
+                    `<h4>` + `<b>` + `Literature: ` + `</b>` + feature.properties.Literature + '.' + feature.properties.Journal + '&nbsp;&nbsp;' + feature.properties.Page + `</h4>` +
+                '&nbsp;&nbsp;' + `<b>` + downloadLink(transform(feature.properties), namecsv(feature.properties)) + `</b>`)
                 .addTo(map);
 
 
         }
 
+        // transform json to csv format
+        function transform(json) {
+
+            var fields = ['Num', 'Disease', 'PatinentsNumber', 'TotalObservation', 'AvgDailyDeath', 'DeathToll', 'TotalPatients', 'AvgDailyPatients',
+                'PatientsAboveSixty', 'PatientsUnderSixty', 'MalePatients', 'FemalePatients', 'Year', 'Days', 'Months',
+                'DailyMinTemp', 'DailyAvgTemp', 'DailyMaxTemp', 'City', 'Country', 'Literature', 'Page', 'Journal'];
+
+            var csv = json2csv({ data: json, fields: fields });
+            return csv;
+           
+        }
+
+      // genrate name of the csv file
+        function namecsv(json) {
+
+            filename = json.City + '_' + json.Country +  '_' + json.Disease.replace(/ /g, "-") + '.csv'
+            return filename;
+
+        }
+
+        // download
+
+        function downloadLink(content, filename) {
+            
+            var blob = new Blob([content]);
+            var href = URL.createObjectURL(blob);
+
+            var dlLilnk = "<a " + "style=" + "font-size:18px; " + "href=" + href + " download=" + filename + ">Download</a>";
+            
+            return dlLilnk;
+
+        }
 
     </script>
 </body>
